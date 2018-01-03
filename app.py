@@ -8,7 +8,7 @@ from fsm import TocMachine
 
 
 API_TOKEN = '548783832:AAHfpiZn8FViSVqJSMKIRF2gPpnXGASKaTI'
-WEBHOOK_URL = 'Your Webhook URL'
+WEBHOOK_URL = 'https://d47e19e5.ngrok.io/hook'
 
 app = Flask(__name__)
 bot = telegram.Bot(token=API_TOKEN)
@@ -18,8 +18,9 @@ machine = TocMachine(
         'state1',
         'state2',
 		'state3',
-		'state4'
-		
+		'state4',
+        'statedefault'
+
     ],
     transitions=[
 	    {
@@ -47,10 +48,19 @@ machine = TocMachine(
             'conditions': 'is_going_to_state2'
         },
         {
+            'trigger': 'default',
+            'source': 'user',
+            'dest': 'statedefault',
+            'conditions': 'is_going_to_statedefault'
+        },
+        {
             'trigger': 'go_back',
             'source': [
                 'state1',
-                'state2'
+                'state2',
+                'state3',
+                'state4',
+                'statedefault'
             ],
             'dest': 'user'
         }
@@ -73,7 +83,11 @@ def _set_webhook():
 @app.route('/hook', methods=['POST'])
 def webhook_handler():
     update = telegram.Update.de_json(request.get_json(force=True), bot)
-    machine.advance(update)
+    text = update.message.text
+    if text == "hi" or text == "i want to play a game" or text == "you idiot" or text == "bye":
+        machine.advance(update)
+    else:
+        machine.default(update)
     return 'ok'
 
 
@@ -87,4 +101,4 @@ def show_fsm():
 
 if __name__ == "__main__":
     _set_webhook()
-    app.run()
+    app.run(port=8000)
